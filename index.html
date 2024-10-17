@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-image: url("https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNnppMjZtYWg0aWFkdXdoZ29pMTYxOHB2N2tpbW5waWVzY2toem93ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26BRGoqbUQvk8nwTC/giphy.webp");
+            background-repeat: no-repeat;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            transition: background 1s ease;
+        }
+
+        .game-active {
+            background: linear-gradient(#111, #222);
+        }
+
+        .game-active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(0deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 0;
+        }
+
+        .basket {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 30px;
+            background-color: #ff5733;
+            border-radius: 5px;
+            z-index: 1;
+            display: none;
+        }
+
+        .falling-object {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: #b0bec5;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.7), inset 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+
+        .score-board {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+            z-index: 1;
+            display: none;
+        }
+
+        .start-btn,
+        .restart-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 20px;
+            font-size: 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: block;
+            z-index: 1;
+        }
+
+        .restart-btn {
+            display: none;
+            background-color: #dc3545;
+        }
+
+        .start-btn:hover {
+            color: black;
+        }
+
+        .restart-btn:hover {
+            color: black;
+        }
+
+        .leaderboard {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            width: 200px;
+            text-align: left;
+            border-radius: 5px;
+            z-index: 1;
+        }
+
+        .leaderboard h3 {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .leaderboard-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .leaderboard-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #555;
+        }
+
+        .clear-leaderboard {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+
+        .difficulty-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        .difficulty-btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .difficulty-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container" id="gameContainer">
+        <div class="basket"></div>
+        <div class="score-board">Score: 0</div>
+        <button class="start-btn">Start</button>
+        <button class="restart-btn">Restart?</button>
+    </div>
+
+    <div class="leaderboard">
+        <h3>Leaderboard</h3>
+        <ul class="leaderboard-list"></ul>
+        <button class="clear-leaderboard">Clear Leaderboard</button>
+    </div>
+
+
+    <div class="difficulty-container">
+        <button class="difficulty-btn" data-difficulty="easy">Easy</button>
+        <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+        <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+        <button class="difficulty-btn" data-difficulty="extreme">Extreme</button>
+    </div>
+
+    <script>
+        const basket = document.querySelector('.basket');
+        const scoreBoard = document.querySelector('.score-board');
+        const startBtn = document.querySelector('.start-btn');
+        const restartBtn = document.querySelector('.restart-btn');
+        const gameContainer = document.getElementById('gameContainer');
+        const leaderboardList = document.querySelector('.leaderboard-list');
+        const clearLeaderboardBtn = document.querySelector('.clear-leaderboard');
+        const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+        const difficultyContainer = document.querySelector('.difficulty-container');
+
+        let basketX = window.innerWidth / 2 - 50;
+        let score = 0;
+        let isGameRunning = false;
+        let isDragging = false;
+        let fallInterval;
+        let gameOver = false;
+        let fallSpeed = 5;
+
+        let scores = JSON.parse(localStorage.getItem('scores')) || [];
+
+        updateLeaderboard();
+        clearLeaderboardBtn.addEventListener('click', clearLeaderboard);
+        startBtn.addEventListener('click', () => {
+            startBtn.style.display = 'none';
+            difficultyContainer.style.display = 'flex';
+        });
+        restartBtn.addEventListener('click', restartGame);
+
+
+        difficultyBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const selectedDifficulty = e.target.getAttribute('data-difficulty');
+                switch (selectedDifficulty) {
+                    case 'easy':
+                        fallSpeed = 3;
+                        break;
+                    case 'medium':
+                        fallSpeed = 5;
+                        break;
+                    case 'hard':
+                        fallSpeed = 7;
+                        break;
+                    case 'extreme':
+                        fallSpeed = 10;
+                        break;
+                }
+                difficultyContainer.style.display = 'none';
+                startGame();
+            });
+        });
+
+        function startGame() {
+            isGameRunning = true;
+            gameOver = false;
+            basket.style.display = 'block';
+            scoreBoard.style.display = 'block';
+            score = 0;
+            scoreBoard.innerText = 'Score: ' + score;
+            fallInterval = setInterval(createFallingObject, 1000);
+            gameContainer.classList.add('game-active');
+        }
+
+        function restartGame() {
+            restartBtn.style.display = 'none';
+            gameContainer.classList.remove('game-active');
+            basket.style.display = 'none';
+            scoreBoard.style.display = 'none';
+            removeAllFallingObjects();
+            clearInterval(fallInterval);
+            startBtn.style.display = 'block';
+        }
+
+        function createFallingObject() {
+            if (gameOver) return;
+
+            const object = document.createElement('div');
+            object.classList.add('falling-object');
+            object.style.left = Math.random() * (window.innerWidth - 40) + 'px';
+            object.style.top = '-40px';
+            document.body.appendChild(object);
+
+            const fallInterval = setInterval(() => {
+                const objectRect = object.getBoundingClientRect();
+                const basketRect = basket.getBoundingClientRect();
+
+                if (objectRect.top >= window.innerHeight && !gameOver) {
+                    gameOverAlert();
+                    object.remove();
+                    clearInterval(fallInterval);
+                }
+
+                if (
+                    objectRect.bottom >= basketRect.top &&
+                    objectRect.left >= basketRect.left &&
+                    objectRect.right <=
+                    basketRect.right
+                ) {
+                    score++;
+                    scoreBoard.innerText = 'Score: ' + score;
+                    object.remove();
+                    clearInterval(fallInterval);
+                }
+
+                object.style.top = objectRect.top + fallSpeed + 'px';
+            }, 20);
+        }
+
+        function gameOverAlert() {
+            gameOver = true;
+            clearInterval(fallInterval);
+
+            const playerName = prompt('Enter your name for the leaderboard:', '');
+
+            if (playerName) {
+                addScoreToLeaderboard(playerName, score);
+            }
+
+            alert('Congrats ' + playerName + '! Your score is: ' + score );
+            restartBtn.style.display = 'block';
+            basket.style.display = 'none';
+            scoreBoard.style.display = 'none';
+        }
+
+        function removeAllFallingObjects() {
+            const fallingObjects = document.querySelectorAll('.falling-object');
+            fallingObjects.forEach(object => object.remove());
+        }
+
+        function updateLeaderboard() {
+            leaderboardList.innerHTML = '';
+            const sortedScores = scores.sort((a, b) => b.score - a.score).slice(0, 10);
+
+            sortedScores.forEach((entry, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${index + 1}. ${entry.name}: ${entry.score}`;
+                leaderboardList.appendChild(li);
+            });
+        }
+
+        function addScoreToLeaderboard(name, score) {
+            scores.push({ name, score });
+            localStorage.setItem('scores', JSON.stringify(scores));
+            updateLeaderboard();
+        }
+
+        function clearLeaderboard() {
+            localStorage.removeItem('scores');
+            scores = [];
+            updateLeaderboard();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!isGameRunning || gameOver) return;
+
+            if (e.key === 'ArrowLeft' && basketX > 0) {
+                basketX -= 30;
+            } else if (e.key === 'ArrowRight' && basketX < window.innerWidth - 100) {
+                basketX += 30;
+            }
+            basket.style.left = basketX + 'px';
+        });
+
+        document.addEventListener('touchstart', (e) => {
+            if (!isGameRunning || gameOver) return;
+
+            isDragging = true;
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (isDragging && !gameOver) {
+                basketX = e.touches[0].clientX - 50;
+                if (basketX < 0) basketX = 0;
+                if (basketX > window.innerWidth - 100) basketX = window.innerWidth - 100;
+                basket.style.left = basketX + 'px';
+            }
+        });
+
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+    </script>
+</body>
+
+</html>
